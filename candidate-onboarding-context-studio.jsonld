@@ -1,0 +1,1001 @@
+{
+  "@context": {
+    "co": "http://example.org/candidate-onboarding#",
+    "schema": "http://schema.org/",
+    "id": "@id",
+    "type": "@type",
+    "name": "schema:name",
+    "description": "schema:description",
+    "attributes": "co:attributes",
+    "identityKey": "co:identityKey",
+    "humanRef": "co:humanRef",
+    "invariant": "co:invariant",
+    "hasState": {
+      "@id": "co:hasState",
+      "@type": "@id"
+    },
+    "initialState": {
+      "@id": "co:initialState",
+      "@type": "@id"
+    },
+    "terminalStates": {
+      "@id": "co:terminalStates",
+      "@type": "@id"
+    },
+    "relatesTo": {
+      "@id": "co:relatesTo",
+      "@type": "@id"
+    },
+    "emitsEvent": {
+      "@id": "co:emitsEvent",
+      "@type": "@id"
+    },
+    "from": {
+      "@id": "co:from",
+      "@type": "@id"
+    },
+    "to": {
+      "@id": "co:to",
+      "@type": "@id"
+    },
+    "precondition": "co:precondition",
+    "postcondition": "co:postcondition",
+    "Entity": "co:Entity",
+    "Operation": "co:Operation",
+    "State": "co:State"
+  },
+  "@graph": [
+    {
+      "id": "co:Project",
+      "type": "Entity",
+      "name": "Project",
+      "description": "A project requiring staffing and team onboarding",
+      "identityKey": "projectId: UUID",
+      "humanRef": "projectName",
+      "attributes": {
+        "projectId": "string",
+        "projectName": "string",
+        "technologyStack": "string",
+        "status": "PLANNING|ACTIVE|ON_HOLD|COMPLETED",
+        "startDate": "date",
+        "projectCommitments": "string|null"
+      },
+      "invariant": [
+        "projectName must be unique",
+        "technologyStack must be defined",
+        "A project must have at least one project manager"
+      ],
+      "hasState": [
+        "co:ProjectPlanning",
+        "co:ProjectActive",
+        "co:ProjectOnHold",
+        "co:ProjectCompleted"
+      ],
+      "initialState": "co:ProjectPlanning",
+      "terminalStates": ["co:ProjectCompleted"],
+      "relatesTo": [
+        "co:ProjectManager",
+        "co:StaffingRequest",
+        "co:Candidate"
+      ],
+      "emitsEvent": [
+        "co:ProjectStarted",
+        "co:ProjectCompleted"
+      ]
+    },
+    {
+      "id": "co:ProjectManager",
+      "type": "Entity",
+      "name": "ProjectManager",
+      "description": "Manager responsible for project staffing and candidate selection",
+      "identityKey": "managerId: UUID",
+      "humanRef": "name",
+      "attributes": {
+        "managerId": "string",
+        "name": "string",
+        "email": "string",
+        "department": "string|null",
+        "outlookCalendar": "string|null"
+      },
+      "invariant": [
+        "email must be unique and valid",
+        "name must be defined"
+      ],
+      "relatesTo": [
+        "co:Project",
+        "co:StaffingRequest",
+        "co:Interview",
+        "co:FaceToFaceMeeting"
+      ]
+    },
+    {
+      "id": "co:StaffingRequest",
+      "type": "Entity",
+      "name": "StaffingRequest",
+      "description": "Request for staffing needs initiated by project manager",
+      "identityKey": "requestId: UUID",
+      "humanRef": "requestId",
+      "attributes": {
+        "requestId": "string",
+        "requestDate": "date",
+        "numberOfPositions": "number",
+        "urgency": "HIGH|MEDIUM|LOW",
+        "status": "OPEN|IN_PROGRESS|FULFILLED|CANCELLED"
+      },
+      "invariant": [
+        "numberOfPositions must be greater than 0",
+        "Must require at least one skill",
+        "Must be associated with a project"
+      ],
+      "hasState": [
+        "co:RequestOpen",
+        "co:RequestInProgress",
+        "co:RequestFulfilled",
+        "co:RequestCancelled"
+      ],
+      "initialState": "co:RequestOpen",
+      "terminalStates": ["co:RequestFulfilled", "co:RequestCancelled"],
+      "relatesTo": [
+        "co:Project",
+        "co:ProjectManager",
+        "co:SkillRequirement",
+        "co:Candidate"
+      ],
+      "emitsEvent": [
+        "co:RequestCreated",
+        "co:RequestFulfilled"
+      ]
+    },
+    {
+      "id": "co:SkillRequirement",
+      "type": "Entity",
+      "name": "SkillRequirement",
+      "description": "Technical skills and requirements for project roles",
+      "identityKey": "skillId: UUID",
+      "humanRef": "skillName",
+      "attributes": {
+        "skillId": "string",
+        "skillName": "string",
+        "proficiencyLevel": "BEGINNER|INTERMEDIATE|ADVANCED|EXPERT",
+        "yearsOfExperience": "number|null",
+        "mandatory": "boolean"
+      },
+      "invariant": [
+        "skillName must be unique",
+        "proficiencyLevel must be one of defined values"
+      ],
+      "relatesTo": [
+        "co:StaffingRequest",
+        "co:Candidate"
+      ]
+    },
+    {
+      "id": "co:Candidate",
+      "type": "Entity",
+      "name": "Candidate",
+      "description": "Internal or external candidate for project positions",
+      "identityKey": "candidateId: UUID",
+      "humanRef": "name",
+      "attributes": {
+        "candidateId": "string",
+        "name": "string",
+        "email": "string",
+        "phone": "string|null",
+        "candidateSource": "INTERNAL|EXTERNAL",
+        "matchScore": "number|null",
+        "currentStatus": "SOURCED|SCREENING|INTERVIEWING|SHORTLISTED|REJECTED|HIRED"
+      },
+      "invariant": [
+        "email must be unique and valid",
+        "candidateSource must be INTERNAL or EXTERNAL",
+        "matchScore must be between 0 and 100 if provided"
+      ],
+      "hasState": [
+        "co:CandidateSourced",
+        "co:CandidateScreening",
+        "co:CandidateInterviewing",
+        "co:CandidateShortlisted",
+        "co:CandidateRejected",
+        "co:CandidateHired"
+      ],
+      "initialState": "co:CandidateSourced",
+      "terminalStates": ["co:CandidateRejected", "co:CandidateHired"],
+      "relatesTo": [
+        "co:StaffingRequest",
+        "co:SkillRequirement",
+        "co:Resume",
+        "co:Interview",
+        "co:OnboardingWorkflow"
+      ],
+      "emitsEvent": [
+        "co:CandidateShortlisted",
+        "co:CandidateHired"
+      ]
+    },
+    {
+      "id": "co:Resume",
+      "type": "Entity",
+      "name": "Resume",
+      "description": "Candidate's resume and profile information",
+      "identityKey": "resumeId: UUID",
+      "humanRef": "resumeId",
+      "attributes": {
+        "resumeId": "string",
+        "resumeUrl": "string|null",
+        "summary": "string|null",
+        "totalExperience": "number|null",
+        "lastUpdated": "date|null"
+      },
+      "invariant": [
+        "Must be associated with exactly one candidate"
+      ],
+      "relatesTo": [
+        "co:Candidate",
+        "co:ResumeSource"
+      ]
+    },
+    {
+      "id": "co:ResumeSource",
+      "type": "Entity",
+      "name": "ResumeSource",
+      "description": "Source for pulling candidate resumes (internal DB, LinkedIn, job portals)",
+      "identityKey": "sourceId: UUID",
+      "humanRef": "sourceName",
+      "attributes": {
+        "sourceId": "string",
+        "sourceName": "string",
+        "sourceType": "INTERNAL|EXTERNAL",
+        "apiEndpoint": "string|null",
+        "isActive": "boolean"
+      },
+      "invariant": [
+        "sourceName must be unique",
+        "sourceType must be INTERNAL or EXTERNAL"
+      ],
+      "relatesTo": [
+        "co:Resume"
+      ]
+    },
+    {
+      "id": "co:InterviewPanel",
+      "type": "Entity",
+      "name": "InterviewPanel",
+      "description": "Panel of interviewers based on technology requirements",
+      "identityKey": "panelId: UUID",
+      "humanRef": "panelName",
+      "attributes": {
+        "panelId": "string",
+        "panelName": "string",
+        "technologyFocus": "string",
+        "panelSize": "number|null"
+      },
+      "invariant": [
+        "Must have at least one panel member",
+        "technologyFocus must be defined"
+      ],
+      "relatesTo": [
+        "co:Interview",
+        "co:PanelMember"
+      ]
+    },
+    {
+      "id": "co:PanelMember",
+      "type": "Entity",
+      "name": "PanelMember",
+      "description": "Individual member of an interview panel",
+      "identityKey": "memberId: UUID",
+      "humanRef": "name",
+      "attributes": {
+        "memberId": "string",
+        "name": "string",
+        "email": "string",
+        "expertise": "string",
+        "role": "LEAD|TECHNICAL_EXPERT|HR_REPRESENTATIVE"
+      },
+      "invariant": [
+        "email must be unique and valid",
+        "expertise must be defined"
+      ],
+      "relatesTo": [
+        "co:InterviewPanel"
+      ]
+    },
+    {
+      "id": "co:Interview",
+      "type": "Entity",
+      "name": "Interview",
+      "description": "Scheduled interview session with candidate",
+      "identityKey": "interviewId: UUID",
+      "humanRef": "interviewId",
+      "attributes": {
+        "interviewId": "string",
+        "scheduledDate": "date",
+        "duration": "number|null",
+        "interviewType": "TECHNICAL|BEHAVIORAL|MANAGERIAL|HR",
+        "status": "SCHEDULED|COMPLETED|CANCELLED|RESCHEDULED",
+        "teamsLink": "string|null",
+        "feedback": "string|null",
+        "rating": "number|null"
+      },
+      "invariant": [
+        "scheduledDate must be in the future for SCHEDULED status",
+        "rating must be between 1 and 10 if provided"
+      ],
+      "hasState": [
+        "co:InterviewScheduled",
+        "co:InterviewCompleted",
+        "co:InterviewCancelled"
+      ],
+      "initialState": "co:InterviewScheduled",
+      "terminalStates": ["co:InterviewCompleted", "co:InterviewCancelled"],
+      "relatesTo": [
+        "co:Candidate",
+        "co:InterviewPanel",
+        "co:CalendarEvent",
+        "co:ShortlistDecision"
+      ],
+      "emitsEvent": [
+        "co:InterviewCompleted"
+      ]
+    },
+    {
+      "id": "co:CalendarEvent",
+      "type": "Entity",
+      "name": "CalendarEvent",
+      "description": "Calendar event for interview scheduling with Outlook integration",
+      "identityKey": "eventId: UUID",
+      "humanRef": "eventId",
+      "attributes": {
+        "eventId": "string",
+        "outlookEventId": "string|null",
+        "startTime": "date",
+        "endTime": "date",
+        "location": "string|null",
+        "isTeamsMeeting": "boolean"
+      },
+      "invariant": [
+        "endTime must be after startTime",
+        "Must be associated with an interview"
+      ],
+      "relatesTo": [
+        "co:Interview",
+        "co:ProjectManager"
+      ]
+    },
+    {
+      "id": "co:ShortlistDecision",
+      "type": "Entity",
+      "name": "ShortlistDecision",
+      "description": "Decision to shortlist candidate after interview",
+      "identityKey": "decisionId: UUID",
+      "humanRef": "decisionId",
+      "attributes": {
+        "decisionId": "string",
+        "decisionDate": "date",
+        "isShortlisted": "boolean",
+        "reason": "string|null",
+        "overallScore": "number|null"
+      },
+      "invariant": [
+        "Must be associated with an interview",
+        "overallScore must be between 0 and 100 if provided"
+      ],
+      "relatesTo": [
+        "co:Interview",
+        "co:Candidate",
+        "co:Notification",
+        "co:FaceToFaceMeeting"
+      ],
+      "emitsEvent": [
+        "co:CandidateShortlisted"
+      ]
+    },
+    {
+      "id": "co:Notification",
+      "type": "Entity",
+      "name": "Notification",
+      "description": "Email notification sent to stakeholders",
+      "identityKey": "notificationId: UUID",
+      "humanRef": "notificationId",
+      "attributes": {
+        "notificationId": "string",
+        "notificationType": "SHORTLIST|INTERVIEW_SCHEDULED|ONBOARDING_INITIATED",
+        "sentDate": "date",
+        "subject": "string",
+        "body": "string|null",
+        "status": "SENT|FAILED|PENDING"
+      },
+      "invariant": [
+        "Must have at least one recipient"
+      ],
+      "relatesTo": [
+        "co:ShortlistDecision",
+        "co:ProjectManager",
+        "co:Candidate",
+        "co:Stakeholder"
+      ]
+    },
+    {
+      "id": "co:Stakeholder",
+      "type": "Entity",
+      "name": "Stakeholder",
+      "description": "Stakeholder involved in the hiring process (HR, team leads, etc.)",
+      "identityKey": "stakeholderId: UUID",
+      "humanRef": "name",
+      "attributes": {
+        "stakeholderId": "string",
+        "name": "string",
+        "email": "string",
+        "role": "HR_TEAM|TEAM_LEAD|DEPARTMENT_HEAD",
+        "department": "string|null"
+      },
+      "invariant": [
+        "email must be unique and valid"
+      ],
+      "relatesTo": [
+        "co:Notification",
+        "co:OnboardingWorkflow"
+      ]
+    },
+    {
+      "id": "co:FaceToFaceMeeting",
+      "type": "Entity",
+      "name": "FaceToFaceMeeting",
+      "description": "In-person meeting between manager and shortlisted candidates",
+      "identityKey": "meetingId: UUID",
+      "humanRef": "meetingId",
+      "attributes": {
+        "meetingId": "string",
+        "scheduledDate": "date",
+        "location": "string",
+        "agenda": "string|null",
+        "status": "SCHEDULED|COMPLETED|CANCELLED",
+        "outcome": "string|null"
+      },
+      "invariant": [
+        "location must be defined",
+        "Must be associated with a shortlisted candidate"
+      ],
+      "hasState": [
+        "co:MeetingScheduled",
+        "co:MeetingCompleted",
+        "co:MeetingCancelled"
+      ],
+      "initialState": "co:MeetingScheduled",
+      "terminalStates": ["co:MeetingCompleted", "co:MeetingCancelled"],
+      "relatesTo": [
+        "co:Candidate",
+        "co:ProjectManager",
+        "co:OnboardingWorkflow"
+      ],
+      "emitsEvent": [
+        "co:MeetingCompleted"
+      ]
+    },
+    {
+      "id": "co:OnboardingWorkflow",
+      "type": "Entity",
+      "name": "OnboardingWorkflow",
+      "description": "Project onboarding process initiated after agreement",
+      "identityKey": "workflowId: UUID",
+      "humanRef": "workflowId",
+      "attributes": {
+        "workflowId": "string",
+        "startDate": "date",
+        "expectedEndDate": "date|null",
+        "status": "INITIATED|IN_PROGRESS|COMPLETED",
+        "completionPercentage": "number|null"
+      },
+      "invariant": [
+        "completionPercentage must be between 0 and 100 if provided",
+        "Must be associated with a candidate and project"
+      ],
+      "hasState": [
+        "co:OnboardingInitiated",
+        "co:OnboardingInProgress",
+        "co:OnboardingCompleted"
+      ],
+      "initialState": "co:OnboardingInitiated",
+      "terminalStates": ["co:OnboardingCompleted"],
+      "relatesTo": [
+        "co:Candidate",
+        "co:Project",
+        "co:Stakeholder",
+        "co:TrainingProgram"
+      ],
+      "emitsEvent": [
+        "co:OnboardingCompleted"
+      ]
+    },
+    {
+      "id": "co:TrainingProgram",
+      "type": "Entity",
+      "name": "TrainingProgram",
+      "description": "Comprehensive training program for newly onboarded team members",
+      "identityKey": "programId: UUID",
+      "humanRef": "programName",
+      "attributes": {
+        "programId": "string",
+        "programName": "string",
+        "duration": "number|null",
+        "startDate": "date|null",
+        "status": "NOT_STARTED|IN_PROGRESS|COMPLETED"
+      },
+      "invariant": [
+        "programName must be unique",
+        "Must have at least one training module"
+      ],
+      "hasState": [
+        "co:TrainingNotStarted",
+        "co:TrainingInProgress",
+        "co:TrainingCompleted"
+      ],
+      "initialState": "co:TrainingNotStarted",
+      "terminalStates": ["co:TrainingCompleted"],
+      "relatesTo": [
+        "co:OnboardingWorkflow",
+        "co:TrainingModule",
+        "co:ArchitectureDocumentation",
+        "co:CodeWalkthrough",
+        "co:KnowledgeTransferSession"
+      ]
+    },
+    {
+      "id": "co:TrainingModule",
+      "type": "Entity",
+      "name": "TrainingModule",
+      "description": "Individual training module within a program",
+      "identityKey": "moduleId: UUID",
+      "humanRef": "moduleName",
+      "attributes": {
+        "moduleId": "string",
+        "moduleName": "string",
+        "moduleType": "ARCHITECTURE_OVERVIEW|CODE_WALKTHROUGH|TECHNOLOGY_TRAINING",
+        "duration": "number|null",
+        "isCompleted": "boolean"
+      },
+      "invariant": [
+        "moduleName must be unique within a training program"
+      ],
+      "relatesTo": [
+        "co:TrainingProgram",
+        "co:Candidate"
+      ]
+    },
+    {
+      "id": "co:ArchitectureDocumentation",
+      "type": "Entity",
+      "name": "ArchitectureDocumentation",
+      "description": "Automated architecture documentation and diagrams for onboarding",
+      "identityKey": "docId: UUID",
+      "humanRef": "title",
+      "attributes": {
+        "docId": "string",
+        "title": "string",
+        "documentType": "SYSTEM_ARCHITECTURE|COMPONENT_DIAGRAM|DATA_FLOW",
+        "documentUrl": "string|null",
+        "isAutomated": "boolean",
+        "lastUpdated": "date|null"
+      },
+      "invariant": [
+        "title must be unique",
+        "Must be associated with a project"
+      ],
+      "relatesTo": [
+        "co:TrainingProgram",
+        "co:Project"
+      ]
+    },
+    {
+      "id": "co:CodeWalkthrough",
+      "type": "Entity",
+      "name": "CodeWalkthrough",
+      "description": "Automated code walkthrough session",
+      "identityKey": "walkthroughId: UUID",
+      "humanRef": "title",
+      "attributes": {
+        "walkthroughId": "string",
+        "title": "string",
+        "codeModule": "string",
+        "videoUrl": "string|null",
+        "duration": "number|null",
+        "isAutomated": "boolean"
+      },
+      "invariant": [
+        "title must be unique",
+        "codeModule must be defined"
+      ],
+      "relatesTo": [
+        "co:TrainingProgram",
+        "co:Project"
+      ]
+    },
+    {
+      "id": "co:KnowledgeTransferSession",
+      "type": "Entity",
+      "name": "KnowledgeTransferSession",
+      "description": "Automated knowledge transfer sessions to reduce dependency on developer availability",
+      "identityKey": "sessionId: UUID",
+      "humanRef": "sessionTitle",
+      "attributes": {
+        "sessionId": "string",
+        "sessionTitle": "string",
+        "sessionDate": "date|null",
+        "sessionType": "LIVE|RECORDED|AUTOMATED",
+        "recordingUrl": "string|null",
+        "isCompleted": "boolean"
+      },
+      "invariant": [
+        "sessionTitle must be unique"
+      ],
+      "relatesTo": [
+        "co:TrainingProgram",
+        "co:Candidate"
+      ]
+    },
+    {
+      "id": "co:ManagesProject",
+      "type": "Operation",
+      "name": "ManagesProject",
+      "description": "Project Manager manages a Project",
+      "from": "co:ProjectManager",
+      "to": "co:Project",
+      "precondition": [
+        "ProjectManager must exist",
+        "Project must exist"
+      ],
+      "postcondition": [
+        "ProjectManager is assigned to Project",
+        "Project has at least one manager"
+      ]
+    },
+    {
+      "id": "co:CreatesStaffingRequest",
+      "type": "Operation",
+      "name": "CreatesStaffingRequest",
+      "description": "Project Manager creates a Staffing Request",
+      "from": "co:ProjectManager",
+      "to": "co:StaffingRequest",
+      "precondition": [
+        "ProjectManager must exist",
+        "Project must exist"
+      ],
+      "postcondition": [
+        "StaffingRequest is created",
+        "StaffingRequest is associated with Project"
+      ]
+    },
+    {
+      "id": "co:RequiresSkill",
+      "type": "Operation",
+      "name": "RequiresSkill",
+      "description": "Staffing Request requires specific Skills",
+      "from": "co:StaffingRequest",
+      "to": "co:SkillRequirement",
+      "precondition": [
+        "StaffingRequest must exist",
+        "SkillRequirement must exist"
+      ],
+      "postcondition": [
+        "StaffingRequest is linked to SkillRequirement",
+        "Candidates can be matched against requirements"
+      ]
+    },
+    {
+      "id": "co:MatchesSkill",
+      "type": "Operation",
+      "name": "MatchesSkill",
+      "description": "Candidate matches Skill Requirements",
+      "from": "co:Candidate",
+      "to": "co:SkillRequirement",
+      "precondition": [
+        "Candidate must exist",
+        "SkillRequirement must exist"
+      ],
+      "postcondition": [
+        "Match score is calculated",
+        "Candidate is evaluated for position"
+      ]
+    },
+    {
+      "id": "co:SchedulesInterview",
+      "type": "Operation",
+      "name": "SchedulesInterview",
+      "description": "System schedules Interview for Candidate",
+      "from": "co:Candidate",
+      "to": "co:Interview",
+      "precondition": [
+        "Candidate must be in SCREENING or INTERVIEWING state",
+        "Calendar availability must be checked"
+      ],
+      "postcondition": [
+        "Interview is scheduled",
+        "Calendar event is created",
+        "Teams invite is sent"
+      ]
+    },
+    {
+      "id": "co:MakesShortlistDecision",
+      "type": "Operation",
+      "name": "MakesShortlistDecision",
+      "description": "Interview results in Shortlist Decision",
+      "from": "co:Interview",
+      "to": "co:ShortlistDecision",
+      "precondition": [
+        "Interview must be in COMPLETED state",
+        "Interview feedback must be provided"
+      ],
+      "postcondition": [
+        "ShortlistDecision is recorded",
+        "Notifications are triggered"
+      ]
+    },
+    {
+      "id": "co:TriggersNotification",
+      "type": "Operation",
+      "name": "TriggersNotification",
+      "description": "Shortlist Decision triggers Notifications to stakeholders",
+      "from": "co:ShortlistDecision",
+      "to": "co:Notification",
+      "precondition": [
+        "ShortlistDecision must exist",
+        "Recipients must be identified"
+      ],
+      "postcondition": [
+        "Notifications are sent to all stakeholders",
+        "Email delivery is tracked"
+      ]
+    },
+    {
+      "id": "co:SchedulesFaceToFace",
+      "type": "Operation",
+      "name": "SchedulesFaceToFace",
+      "description": "Shortlist Decision schedules Face-to-Face Meeting",
+      "from": "co:ShortlistDecision",
+      "to": "co:FaceToFaceMeeting",
+      "precondition": [
+        "Candidate must be shortlisted",
+        "Manager availability must be confirmed"
+      ],
+      "postcondition": [
+        "Face-to-Face Meeting is scheduled",
+        "Meeting location is confirmed"
+      ]
+    },
+    {
+      "id": "co:InitiatesOnboarding",
+      "type": "Operation",
+      "name": "InitiatesOnboarding",
+      "description": "Face-to-Face Meeting initiates Onboarding Workflow",
+      "from": "co:FaceToFaceMeeting",
+      "to": "co:OnboardingWorkflow",
+      "precondition": [
+        "Face-to-Face Meeting must be completed",
+        "Agreement must be reached"
+      ],
+      "postcondition": [
+        "Onboarding Workflow is initiated",
+        "Training Program is created",
+        "HR is notified for external candidates"
+      ]
+    },
+    {
+      "id": "co:IncludesTraining",
+      "type": "Operation",
+      "name": "IncludesTraining",
+      "description": "Onboarding Workflow includes Training Program",
+      "from": "co:OnboardingWorkflow",
+      "to": "co:TrainingProgram",
+      "precondition": [
+        "Onboarding Workflow must be initiated",
+        "Training content must be available"
+      ],
+      "postcondition": [
+        "Training Program is assigned",
+        "Training modules are accessible"
+      ]
+    },
+    {
+      "id": "co:GeneratesDocumentation",
+      "type": "Operation",
+      "name": "GeneratesDocumentation",
+      "description": "Training Program generates Architecture Documentation",
+      "from": "co:TrainingProgram",
+      "to": "co:ArchitectureDocumentation",
+      "precondition": [
+        "Training Program must exist",
+        "Project codebase must be accessible"
+      ],
+      "postcondition": [
+        "Architecture Documentation is auto-generated",
+        "Diagrams are created",
+        "Documentation is up-to-date"
+      ]
+    },
+    {
+      "id": "co:GeneratesWalkthrough",
+      "type": "Operation",
+      "name": "GeneratesWalkthrough",
+      "description": "Training Program generates Code Walkthroughs",
+      "from": "co:TrainingProgram",
+      "to": "co:CodeWalkthrough",
+      "precondition": [
+        "Training Program must exist",
+        "Code modules must be identified"
+      ],
+      "postcondition": [
+        "Code Walkthrough videos are generated",
+        "Walkthroughs are automated",
+        "End-to-end flows are traced"
+      ]
+    },
+    {
+      "id": "co:ProjectPlanning",
+      "type": "State",
+      "name": "ProjectPlanning",
+      "description": "Project is in planning phase"
+    },
+    {
+      "id": "co:ProjectActive",
+      "type": "State",
+      "name": "ProjectActive",
+      "description": "Project is actively running"
+    },
+    {
+      "id": "co:ProjectOnHold",
+      "type": "State",
+      "name": "ProjectOnHold",
+      "description": "Project is temporarily on hold"
+    },
+    {
+      "id": "co:ProjectCompleted",
+      "type": "State",
+      "name": "ProjectCompleted",
+      "description": "Project has been completed"
+    },
+    {
+      "id": "co:RequestOpen",
+      "type": "State",
+      "name": "RequestOpen",
+      "description": "Staffing request is open"
+    },
+    {
+      "id": "co:RequestInProgress",
+      "type": "State",
+      "name": "RequestInProgress",
+      "description": "Staffing request is being processed"
+    },
+    {
+      "id": "co:RequestFulfilled",
+      "type": "State",
+      "name": "RequestFulfilled",
+      "description": "Staffing request has been fulfilled"
+    },
+    {
+      "id": "co:RequestCancelled",
+      "type": "State",
+      "name": "RequestCancelled",
+      "description": "Staffing request has been cancelled"
+    },
+    {
+      "id": "co:CandidateSourced",
+      "type": "State",
+      "name": "CandidateSourced",
+      "description": "Candidate has been sourced"
+    },
+    {
+      "id": "co:CandidateScreening",
+      "type": "State",
+      "name": "CandidateScreening",
+      "description": "Candidate is being screened"
+    },
+    {
+      "id": "co:CandidateInterviewing",
+      "type": "State",
+      "name": "CandidateInterviewing",
+      "description": "Candidate is in interview process"
+    },
+    {
+      "id": "co:CandidateShortlisted",
+      "type": "State",
+      "name": "CandidateShortlisted",
+      "description": "Candidate has been shortlisted"
+    },
+    {
+      "id": "co:CandidateRejected",
+      "type": "State",
+      "name": "CandidateRejected",
+      "description": "Candidate has been rejected"
+    },
+    {
+      "id": "co:CandidateHired",
+      "type": "State",
+      "name": "CandidateHired",
+      "description": "Candidate has been hired"
+    },
+    {
+      "id": "co:InterviewScheduled",
+      "type": "State",
+      "name": "InterviewScheduled",
+      "description": "Interview is scheduled"
+    },
+    {
+      "id": "co:InterviewCompleted",
+      "type": "State",
+      "name": "InterviewCompleted",
+      "description": "Interview has been completed"
+    },
+    {
+      "id": "co:InterviewCancelled",
+      "type": "State",
+      "name": "InterviewCancelled",
+      "description": "Interview has been cancelled"
+    },
+    {
+      "id": "co:MeetingScheduled",
+      "type": "State",
+      "name": "MeetingScheduled",
+      "description": "Face-to-face meeting is scheduled"
+    },
+    {
+      "id": "co:MeetingCompleted",
+      "type": "State",
+      "name": "MeetingCompleted",
+      "description": "Face-to-face meeting has been completed"
+    },
+    {
+      "id": "co:MeetingCancelled",
+      "type": "State",
+      "name": "MeetingCancelled",
+      "description": "Face-to-face meeting has been cancelled"
+    },
+    {
+      "id": "co:OnboardingInitiated",
+      "type": "State",
+      "name": "OnboardingInitiated",
+      "description": "Onboarding has been initiated"
+    },
+    {
+      "id": "co:OnboardingInProgress",
+      "type": "State",
+      "name": "OnboardingInProgress",
+      "description": "Onboarding is in progress"
+    },
+    {
+      "id": "co:OnboardingCompleted",
+      "type": "State",
+      "name": "OnboardingCompleted",
+      "description": "Onboarding has been completed"
+    },
+    {
+      "id": "co:TrainingNotStarted",
+      "type": "State",
+      "name": "TrainingNotStarted",
+      "description": "Training has not started"
+    },
+    {
+      "id": "co:TrainingInProgress",
+      "type": "State",
+      "name": "TrainingInProgress",
+      "description": "Training is in progress"
+    },
+    {
+      "id": "co:TrainingCompleted",
+      "type": "State",
+      "name": "TrainingCompleted",
+      "description": "Training has been completed"
+    },
+    {
+      "id": "co:ProjectStarted",
+      "type": "State",
+      "name": "ProjectStarted",
+      "description": "Event emitted when project starts"
+    },
+    {
+      "id": "co:RequestCreated",
+      "type": "State",
+      "name": "RequestCreated",
+      "description": "Event emitted when staffing request is created"
+    }
+  ]
+}
